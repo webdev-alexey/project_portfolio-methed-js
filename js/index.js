@@ -1,3 +1,25 @@
+//! Блокировка скролла
+const disableScroll = () => {
+  const widthScroll = window.innerWidth - document.body.offsetWidth;
+
+  document.body.scrollPosition = window.scrollY;
+
+  document.body.style.cssText = `
+     overflow: hidden;
+     position: fixed;
+     top: -${document.body.scrollPosition}px;
+     left: 0;
+     height: 100vh;
+     width: 100vw;
+     padding-right: ${widthScroll}px;
+  `;
+};
+
+const enabledScroll = () => {
+  document.body.style.cssText = "position: relative";
+  window.scroll({ top: document.body.scrollPosition });
+};
+
 {
   // Модальное окно
   const presentOrderBtn = document.querySelector(".present__order-btn");
@@ -20,7 +42,11 @@
       default: 5,
     };
 
-    openBtn.addEventListener("click", () => {
+    const openModal = () => {
+      disableScroll();
+      modal.style.opacity = opacity;
+      modal.classList.add(openSelector);
+
       modal.style.opacity = opacity;
 
       modal.classList.add(openSelector);
@@ -30,9 +56,10 @@
         modal.style.opacity = opacity;
         if (opacity >= 1) clearInterval(timer);
       }, speed[sk]);
-    });
+    };
 
-    closeTrigger.addEventListener("click", () => {
+    const closeModal = () => {
+      enabledScroll();
       const timer = setInterval(() => {
         opacity -= 0.02;
         modal.style.opacity = opacity;
@@ -41,8 +68,16 @@
           modal.classList.remove(openSelector);
         }
       }, speed[sk]);
+    };
 
-      modal.classList.remove(openSelector);
+    openBtn.addEventListener("click", openModal);
+
+    closeTrigger.addEventListener("click", closeModal);
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
     });
   };
 
@@ -75,4 +110,58 @@
   };
 
   handlerBurger(headerContactsBurger, headerContacts, "header__contacts_open");
+}
+
+{
+  //! Галерея
+
+  const portfolioList = document.querySelector(".portfolio__list");
+  const pageOverlay = document.createElement("div");
+  pageOverlay.classList.add("page__overlay");
+
+  portfolioList.addEventListener("click", (event) => {
+    const card = event.target.closest(".card");
+
+    if (card) {
+      document.body.append(pageOverlay);
+      //! Для улучшенного изображения
+      const title = card.querySelector(".card__client");
+      const picture = document.createElement("picture");
+
+      picture.style.cssText = `
+           position: absolute;
+           top: 20px;
+           left: 50%;
+           transform: translateX(-50%);
+           width: 90%;
+           max-width: 1440px;
+        `;
+
+      picture.innerHTML = `
+           <source srcset="${card.dataset.fullImage}.avif" type="image/avif">
+           <source srcset="${card.dataset.fullImage}.webp" type="image/webp">
+           <img src="${card.dataset.fullImage}.jpg" alt="${title.textContent}">
+        `;
+
+      pageOverlay.append(picture);
+      disableScroll();
+      //! Для просто изображения.
+      //const img = document.createElement('img');
+      //img.src = card.dataset.fullImage + '.jpg';
+      //img.style.cssText = `
+      //   position: absolute;
+      //   top: 20px;
+      //   left: 50%;
+      //   transform: translateX(-50%);
+      //`;
+
+      //pageOverlay.append(img);
+    }
+  });
+
+  pageOverlay.addEventListener("click", () => {
+    pageOverlay.remove();
+    pageOverlay.textContent = "";
+    enabledScroll();
+  });
 }
